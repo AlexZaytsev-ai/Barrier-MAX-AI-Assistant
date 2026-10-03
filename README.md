@@ -48,8 +48,6 @@ Chat modes and message history are stored in PostgreSQL. Routing, handoff, and R
 
 ![Barrier MAX AI Assistant workflow](workflowBarrier.jpg)
 
-The screenshot shows the main interaction branches. Diagnostic and test-data cleanup nodes are excluded from the public workflow.
-
 ---
 
 ## How It Works
@@ -133,15 +131,6 @@ The main scenarios were checked in the original configured environment before ha
 * Consultation checks for store prices, service terms, and unrelated requests.
 
 The sanitized export has passed JSON and connection checks. It has not been executed with new credentials in a separate environment.
-
----
-
-## Current Scope
-
-* Live stock, a full catalog, and 1C integration are not included.
-* Payments, order tracking, and automated reminders are not implemented.
-* The export has no dedicated event deduplication, global error workflow, or guaranteed delivery queue. Repeated events, outages, and concurrent messages need additional work before scaling.
-* Store prices and service terms in the prompt reflect the export date and must be updated before reuse.
 
 ---
 
