@@ -1,100 +1,155 @@
-# Барьер — AI-помощник в MAX
+# Barrier MAX AI Assistant
 
-**Проект для реального заказчика — магазина дверей «Барьер» на Камчатке.**
+[Русская версия](README_RU.md)
 
-ИИ-помощник консультирует покупателей по вопросам дверей и услуг магазина, учитывает историю разговора и передаёт обращение сотруднику. Покупатель продолжает общаться в том же личном чате MAX.
+**A project built for a real customer — Barrier, a door retailer in Kamchatka, Russia.**
 
-**Стадия:** основная функциональность реализована; проект подготовлен к тестированию заказчиком. Эффект на продажи и время работы сотрудников пока не измерен.
+AI-assisted customer consultation workflow built with n8n. It receives messages in MAX, uses OpenAI with conversation history from PostgreSQL, and transfers requests to store employees. Employees reply from a staff group; the customer receives their responses in the same private chat.
 
-## Задача бизнеса
+**Project status:** core functionality implemented and prepared for customer testing. Business impact has not yet been measured.
 
-Покупателям нужны ответы о выборе дверей, примерной стоимости, доставке, установке и порядке обращения в магазин. Сотрудник должен получать контекст вопроса, когда покупателю нужна персональная помощь.
+---
 
-Решение объединяет автоматическую консультацию и участие сотрудника. ИИ отвечает по сведениям магазина; подбор конкретной модели, наличие, окончательная цена и согласование выезда требуют подтверждения человеком.
+## Business Problem
 
-## Что реализовано
+Customers ask about door selection, indicative prices, delivery, installation, measurements, and visiting the store. Employees may be busy or unavailable when a message arrives and need conversation context when taking over.
 
-- Приём сообщений MAX через защищённый webhook и отправка ответов через HTTP API.
-- Консультация с OpenAI по правилам и сведениям, согласованным с заказчиком.
-- История переписки в PostgreSQL: последние 30 сообщений передаются модели в хронологическом порядке.
-- Режимы диалога `ai`, `waiting`, `human`, сохранённые в базе данных.
-- Передача обращения в группу «Барьер — обращения»: текст запроса, ID чата покупателя и до 12 предыдущих сообщений; текст истории ограничен 2 500 символами.
-- Пересылка новых сообщений покупателя сотрудникам в режимах ожидания и общения с человеком.
-- Ответ сотрудника покупателю через Reply в группе. Проверяются группа, отправитель-человек, тип Reply, текст, ID покупателя и автор исходного сообщения — бот.
-- Возврат к автоматической консультации по фразе «Вернуться к ИИ».
-- Параметризованные SQL-запросы и нормализация текста ответа на JavaScript.
+The workflow provides initial guidance based on information supplied by the customer company and passes requests to employees with recent conversation history. Product availability, final prices, and appointment confirmation remain under human control.
 
-## Моя роль
+---
 
-Собрал требования и уточнил условия консультаций с заказчиком, разработал workflow в n8n, подключил LLM и PostgreSQL, реализовал передачу диалога сотрудникам и адаптировал первоначальный Telegram-сценарий под MAX. Подготовил инструкцию сотрудникам и проверил основные сценарии в рабочей среде перед передачей заказчику.
+## My Role
 
-В этом репозитории опубликована версия MAX. Telegram был первым этапом разработки, его workflow в комплект не входит.
+Gathered requirements with the customer, configured consultation rules, built the n8n workflow, integrated OpenAI and PostgreSQL, implemented employee handoff, and adapted the initial Telegram workflow to MAX. Prepared operating instructions for employees and checked the main interaction scenarios before customer testing.
 
-## Архитектура
+This repository contains the MAX version. Telegram was the initial development stage and is not included in the public export.
+
+---
+
+## Workflow Architecture
 
 ```mermaid
 flowchart TD
-  W["Webhook MAX"] --> R{"Личный чат или группа?"}
-  R -->|Личный чат| M{"Режим и запрос"}
-  M -->|ai| A["История → LLM → ответ"]
-  M -->|Запрос сотрудника| H["Уведомление → waiting"]
-  M -->|waiting / human| F["Переслать сотрудникам"]
-  R -->|Группа| V["Проверка Reply"]
-  V --> E["Ответ покупателю → human"]
-  A --> P[("PostgreSQL")]
-  H --> P
-  F --> P
-  E --> P
+    A["MAX webhook"] --> B{"Private chat or staff group?"}
+    B -->|Private chat| C{"Chat mode and customer request"}
+    C -->|Return to AI| D["Set ai and confirm"]
+    C -->|waiting or human| E["Forward message to employees"]
+    C -->|Request an employee| F["Send request and history; set waiting"]
+    C -->|AI consultation| G["Load history; OpenAI; send and save answer"]
+    B -->|Staff group| H["Validate employee Reply"]
+    H --> I["Send reply; update mode; save employee answer"]
 ```
 
-## Режимы диалога
+Chat modes and message history are stored in PostgreSQL. Routing, handoff, and Reply validation are handled by explicit workflow conditions rather than by the language model.
 
-| Режим | Поведение |
+---
+
+## Workflow
+
+![Barrier MAX AI Assistant workflow](workflowBarrier.jpg)
+
+The screenshot shows the main interaction branches. Diagnostic and test-data cleanup nodes are excluded from the public workflow.
+
+---
+
+## How It Works
+
+1. MAX sends a message event to the authenticated n8n webhook.
+2. The workflow checks the event type and routes private messages separately from staff group messages.
+3. For a private message, n8n prepares the text and chat ID and loads the current mode from PostgreSQL.
+4. In AI mode, up to 30 previous messages are loaded in chronological order. OpenAI answers using this history and the store's consultation rules.
+5. JavaScript normalizes the response and adds store location details for relevant visit requests. n8n sends the answer and saves the user/assistant pair.
+6. A request for an employee, measurement, or installation arrangement is sent to the staff group; the chat switches to `waiting`.
+7. The handoff includes the current request, customer chat ID, and up to 12 previous messages; the history text is limited to 2,500 characters.
+8. In `waiting` and `human` modes, new customer messages are forwarded to the group; the AI does not answer them.
+9. An employee uses Reply on a bot-generated request or forwarded message. After validation, the answer is sent to the customer and saved with an employee label.
+10. The customer returns to AI consultation by sending «Вернуться к ИИ» (Return to AI).
+
+---
+
+## Chat Modes
+
+| Mode | Behavior |
 | --- | --- |
-| `ai` | ИИ консультирует покупателя. Запрос сотрудника направляет обращение в группу. |
-| `waiting` | ИИ не отвечает; сообщения покупателя пересылаются сотрудникам. |
-| `human` | Диалог ведёт сотрудник; ответы направляются из группы в личный чат. |
+| `ai` | AI consultation; a request for human assistance triggers handoff. |
+| `waiting` | Waiting for an employee; new messages are forwarded to the group. |
+| `human` | An employee handles the conversation through the staff group. |
 
-Команда «Вернуться к ИИ» переводит любой текущий режим в `ai`. Ответы сотрудника сохраняются с пометкой «Сотрудник магазина» в роли `assistant`. Поздний ответ сотрудника отправляется покупателю; SQL обновления режима сохраняет `ai`, если покупатель уже вернулся к ИИ. Полной защиты от одновременных событий эта проверка не обеспечивает.
+The return-to-AI command sets `ai`. A late employee reply is still delivered; the mode update preserves `ai` if the customer has already returned to the assistant. This check does not guarantee ordering of simultaneous events.
 
-## Стек
+---
 
-**n8n · MAX HTTP API · OpenAI · PostgreSQL · JavaScript · Docker / Ubuntu VPS**
+## Key Architecture Decisions
 
-Модель и адрес API сохранены как в предоставленном экспорте. Доступность модели и совместимость нод следует проверить в собственной среде перед запуском.
+* OpenAI handles consultation; explicit conditions handle routing and modes.
+* PostgreSQL stores the mode independently of AI conversation context.
+* Session keys use `max:<chat_id>` to associate messages with a conversation.
+* History is bounded before being sent to the model or staff group.
+* An employee reply must come from the configured group, from a human sender, and use Reply on a message originally sent by the bot.
+* Customer chat ID and reply text are checked before sending the answer.
+* Database queries use parameters rather than concatenating customer input into SQL.
+* Availability, final prices, and appointments require an employee. The assistant has no access to current stock or the full 1C catalog.
 
-## Файлы
+---
 
-| Путь | Содержимое |
+## Tech Stack
+
+| Technology | Purpose |
 | --- | --- |
-| `workflow/barrier-max.public.json` | Очищенный workflow для импорта и изучения. |
-| `sql/schema.sql` | Минимальная совместимая схема PostgreSQL, восстановленная по SQL-запросам workflow; это не дамп рабочей базы. |
-| `docs/setup.md` | Подключение credentials, группы, бота и базы. |
-| `docs/manual-checks.md` | Сценарии ручной проверки после настройки. |
+| n8n | Workflow automation, routing, and integration |
+| MAX HTTP API | Message intake, customer responses, and staff group communication |
+| OpenAI API | Consultation using store rules and conversation history |
+| PostgreSQL | Message history and persistent chat modes |
+| JavaScript | Response normalization and expression logic |
+| Docker / Ubuntu VPS | Deployment environment |
 
-## Запуск
+---
 
-1. Создать тестовую базу и выполнить `sql/schema.sql`.
-2. Импортировать `workflow/barrier-max.public.json` в n8n.
-3. Подключить собственные credentials MAX, webhook, PostgreSQL и OpenAI.
-4. Заменить `STAFF_CHAT_ID` и `BOT_USER_ID`, проверить настройки модели и сведения в промпте.
-5. Настроить webhook MAX на свой HTTPS-адрес и провести проверки из `docs/manual-checks.md`.
+## Import and Setup
 
-Подробности: [docs/setup.md](docs/setup.md).
+The public export excludes credentials, internal staff group and bot IDs, pinned chat data, and instance metadata. The workflow is inactive and requires configuration.
 
-## Границы текущей версии
+1. Create a test database and run `sql/schema.sql`. This is a minimal compatible schema reconstructed from workflow queries, not a production database dump.
+2. Import `workflow/barrier-max.public.json` into n8n.
+3. Configure MAX, webhook authentication, PostgreSQL, and OpenAI credentials.
+4. Replace `STAFF_CHAT_ID` and `BOT_USER_ID` in the nodes listed in [docs/setup.md](docs/setup.md).
+5. Check model availability, API connectivity, and the store information in the system prompt.
+6. Register the MAX subscription with your HTTPS webhook URL and matching authentication settings.
+7. Check consultation, handoff, employee Reply, and return-to-AI scenarios before activation for customer use.
 
-- Актуальные остатки и каталог из 1С не подключены. Бот не подтверждает наличие товара.
-- Оплата и оформление покупки в чате не реализованы. Согласование замера или установки выполняет сотрудник.
-- Напоминания, отслеживание статусов заказа и метрики бизнеса — возможные следующие этапы, а не функции опубликованной версии.
-- В данном экспорте нет отдельной дедупликации webhook-событий, глобального workflow обработки ошибок или гарантированной очереди доставки. Повторные и одновременные события требуют дополнительной проверки и доработки перед масштабированием.
+Setup details: [docs/setup.md](docs/setup.md). Manual verification plan: [docs/manual-checks.md](docs/manual-checks.md).
 
-## Публичная копия
+---
 
-Из экспорта удалены ссылки на credentials, внутренние ID, метаданные экземпляра n8n, диагностическая ветка и нода очистки тестового чата. Workflow не активирован. Рабочие данные и переписка клиентов в комплект не включены.
+## Tested Scenarios
 
-Промпт отражает правила магазина на момент экспорта. Он служит примером проектной логики; цены и условия требуется актуализировать перед использованием.
+The main scenarios were checked in the original configured environment before handoff to the customer:
 
-Проверены корректность JSON, целостность связей и отсутствие выявленных секретов в публичной копии. Запуск очищенного workflow с новыми credentials в отдельной среде не выполнялся.
+* Consultation using context from previous messages.
+* Requesting an employee and notifying the staff group.
+* Forwarding new customer messages while AI consultation is paused.
+* Delivering an employee Reply to the correct private chat.
+* Returning the chat to AI mode.
+* Consultation checks for store prices, service terms, and unrelated requests.
 
-Автор: [Александр Зайцев](https://github.com/AlexZaytsev-ai).
+The sanitized export has passed JSON and connection checks. It has not been executed with new credentials in a separate environment.
+
+---
+
+## Current Scope
+
+* Live stock, a full catalog, and 1C integration are not included.
+* Payments, order tracking, and automated reminders are not implemented.
+* The export has no dedicated event deduplication, global error workflow, or guaranteed delivery queue. Repeated events, outages, and concurrent messages need additional work before scaling.
+* Store prices and service terms in the prompt reflect the export date and must be updated before reuse.
+
+---
+
+## Author
+
+Alexander Zaytsev
+
+AI Automation Engineer
+
+* GitHub: https://github.com/AlexZaytsev-ai
+* Email: [zaytcev_alexandr@mail.ru](mailto:zaytcev_alexandr@mail.ru)
