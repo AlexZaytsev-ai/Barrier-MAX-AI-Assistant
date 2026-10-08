@@ -8,7 +8,7 @@ A customer assistant built with n8n: a six-button MAX menu, AI consultation, ser
 
 **Project status — 8 October 2026:** the current implementation stage is complete, the deployed menu and handoff scenarios have been manually checked, and the updated version has been handed over for customer feedback. Business impact has not yet been measured.
 
-**Repository scope:** this README describes the current deployed version. The JSON export and workflow screenshot are an earlier baseline, before the six-button menu, request summaries, and error notifications. Importing that export does not reproduce all features described below.
+**Repository scope:** this README and the screenshots show the current deployed version. The JSON export is an earlier baseline, before the six-button menu, request summaries, and error notifications. Importing that export does not reproduce all features described below.
 
 ---
 
@@ -66,11 +66,32 @@ flowchart TD
 
 Chat modes and message history are stored in PostgreSQL. Explicit workflow conditions handle menu routing, handoff, and Reply validation; the language model handles consultation and request summaries.
 
-### Baseline Workflow Screenshot
+### Current Workflow Screenshot
 
-![Earlier Barrier MAX workflow, before the menu update](workflowBarrier.jpg)
+The current main workflow as of 8 October 2026. Click an image to open it at full size; expand the sections below for a closer view of the node labels.
 
-This image corresponds to the earlier public export, not the current menu-based version.
+[![Current Barrier MAX workflow with menu and request summaries](workflowBarrier.jpg)](workflowBarrier.jpg)
+
+<details>
+<summary>Menu and service information</summary>
+
+[![Bot start, menu routing, delivery, addresses, measurement, and installation](docs/images/workflow-menu.jpg)](docs/images/workflow-menu.jpg)
+
+</details>
+
+<details>
+<summary>AI consultation and employee handoff</summary>
+
+[![AI consultation, request summary, employee handoff, and conversation history](docs/images/workflow-customer.jpg)](docs/images/workflow-customer.jpg)
+
+</details>
+
+<details>
+<summary>Employee replies</summary>
+
+[![Employee Reply validation, response delivery, human mode, and saved history](docs/images/workflow-staff.jpg)](docs/images/workflow-staff.jpg)
+
+</details>
 
 ---
 
