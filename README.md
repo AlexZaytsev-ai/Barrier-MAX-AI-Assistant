@@ -6,6 +6,12 @@
 
 A customer assistant built with n8n: a six-button MAX menu, AI consultation, service information, and employee handoff in the same private chat. OpenAI uses conversation history from PostgreSQL; employees receive a concise request summary and reply from a staff group.
 
+## Demo
+
+https://github.com/user-attachments/assets/05c5686b-2ff1-4160-9aff-5e8319e7d965
+
+49-second demo: customer menu, AI consultation, request summary, employee reply, and the n8n workflow. The interface and captions are in Russian.
+
 **Project status — 8 October 2026:** the current implementation stage is complete, the deployed menu and handoff scenarios have been manually checked, and the updated version has been handed over for customer feedback. Business impact has not yet been measured.
 
 **Repository scope:** this README and the screenshots show the current deployed version. The JSON export is an earlier baseline, before the six-button menu, request summaries, and error notifications. Importing that export does not reproduce all features described below.
