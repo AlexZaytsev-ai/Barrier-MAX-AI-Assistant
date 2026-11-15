@@ -8,7 +8,7 @@
 
 ## Демонстрация
 
-https://github.com/user-attachments/assets/05c5686b-2ff1-4160-9aff-5e8319e7d965
+https://github.com/user-attachments/assets/1596ecda-935e-45b9-aa5e-37b444c984c4
 
 49 секунд: меню покупателя, консультация ИИ, сводка обращения, ответ сотрудника и схема workflow в n8n.
 

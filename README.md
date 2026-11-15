@@ -8,7 +8,7 @@ A customer assistant built with n8n: a six-button MAX menu, AI consultation, ser
 
 ## Demo
 
-https://github.com/user-attachments/assets/05c5686b-2ff1-4160-9aff-5e8319e7d965
+https://github.com/user-attachments/assets/1596ecda-935e-45b9-aa5e-37b444c984c4
 
 49-second demo: customer menu, AI consultation, request summary, employee reply, and the n8n workflow. The interface and captions are in Russian.
 
